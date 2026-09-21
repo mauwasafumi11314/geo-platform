@@ -1,0 +1,100 @@
+:root {
+  --bg: #11161d;
+  --panel: #182028;
+  --panel-border: #263039;
+  --text: #e6edf3;
+  --muted: #8a99a8;
+  --accent: #4aa8ff;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+}
+
+#app {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: 100vh;
+}
+
+#sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  background: var(--panel);
+  border-right: 1px solid var(--panel-border);
+  overflow-y: auto;
+}
+
+#sidebar h1 { margin: 0; font-size: 1.25rem; letter-spacing: 0.01em; }
+#sidebar h2 { margin: 0 0 0.75rem; font-size: 0.75rem; text-transform: uppercase;
+              letter-spacing: 0.08em; color: var(--muted); }
+.subtitle { margin: 0.25rem 0 0; font-size: 0.8rem; color: var(--muted); }
+
+.layer-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.layer {
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.7rem 0.8rem;
+  background: #1d262f;
+}
+
+.layer-header { display: flex; align-items: center; gap: 0.6rem; }
+.layer-header input { accent-color: var(--accent); cursor: pointer; }
+.layer-title { font-size: 0.9rem; font-weight: 600; flex: 1; cursor: pointer; }
+.layer-meta { margin-top: 0.35rem; font-size: 0.72rem; color: var(--muted); }
+
+.zoom-to {
+  background: none;
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.68rem;
+  padding: 0.15rem 0.45rem;
+}
+.zoom-to:hover { color: var(--text); border-color: var(--accent); }
+
+.status { color: var(--muted); font-size: 0.8rem; margin: 0; }
+.status.error { color: #ff8f8f; }
+
+#status-bar {
+  margin-top: auto;
+  font-size: 0.72rem;
+  color: var(--muted);
+  border-top: 1px solid var(--panel-border);
+  padding-top: 0.75rem;
+}
+
+#map { height: 100%; }
+
+.maplibregl-popup-content {
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.maplibregl-popup-content h3 { margin: 0 0 0.5rem; font-size: 0.85rem; }
+.maplibregl-popup-content table { border-collapse: collapse; width: 100%; }
+.maplibregl-popup-content th {
+  text-align: left; color: var(--muted); font-weight: 500;
+  padding-right: 0.75rem; vertical-align: top;
+}
+.maplibregl-popup-content td { word-break: break-word; }
+.maplibregl-popup-close-button { color: var(--muted); font-size: 1.1rem; }
+
+@media (max-width: 800px) {
+  #app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  #sidebar { max-height: 40vh; }
+}

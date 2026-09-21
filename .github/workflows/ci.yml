@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install ruff
+      - run: ruff check --output-format=github .
+      - run: ruff format --check .
+
+  test:
+    name: Tests (PostGIS)
+    runs-on: ubuntu-latest
+
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: geoplatform_test
+          POSTGRES_USER: geo
+          POSTGRES_PASSWORD: geo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U geo -d geoplatform_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://geo:geo@localhost:5432/geoplatform_test
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install project
+        run: pip install -e ".[dev]"
+      - name: Run tests
+        run: pytest -q
+
+  etl:
+    name: ETL smoke test
+    runs-on: ubuntu-latest
+
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: geoplatform_test
+          POSTGRES_USER: geo
+          POSTGRES_PASSWORD: geo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U geo -d geoplatform_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://geo:geo@localhost:5432/geoplatform_test
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install project with the geo stack
+        run: pip install -e ".[etl,dev]"
+      - name: Apply schema
+        run: |
+          for script in db/init/*.sql; do
+            echo "applying $script"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$script"
+          done
+      - name: Load a GeoJSON fixture and verify it lands
+        run: |
+          mkdir -p /tmp/fixtures
+          cat > /tmp/fixtures/ci_points.geojson <<'JSON'
+          {
+            "type": "FeatureCollection",
+            "features": [
+              {"type": "Feature", "properties": {"name": "A", "rank": 1},
+               "geometry": {"type": "Point", "coordinates": [0.0, 0.0]}},
+              {"type": "Feature", "properties": {"name": "B", "rank": 2},
+               "geometry": {"type": "Point", "coordinates": [10.5, -4.25]}}
+            ]
+          }
+          JSON
+          geoplatform-etl load /tmp/fixtures/ci_points.geojson --layer ci_points
+          geoplatform-etl list
+          count=$(psql "$DATABASE_URL" -tAc "SELECT feature_count FROM layers WHERE name = 'ci_points'")
+          echo "ci_points feature_count=$count"
+          test "$count" = "2"
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build

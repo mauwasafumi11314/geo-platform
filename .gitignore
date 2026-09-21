@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+frontend/dist/
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# Data (keep sample data out of git; point the ETL at a local folder instead)
+data/
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.sbn
+*.sbx
+*.qix
+*.gpkg
+*.gpkg-journal
+*.tif
+*.tiff
+!db/init/*.sql
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

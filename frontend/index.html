@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GeoPlatform</title>
+    <meta name="description" content="Vector tiles served from PostGIS, rendered with MapLibre." />
+  </head>
+  <body>
+    <div id="app">
+      <aside id="sidebar">
+        <header>
+          <h1>GeoPlatform</h1>
+          <p class="subtitle">PostGIS &rarr; vector tiles &rarr; MapLibre</p>
+        </header>
+        <section>
+          <h2>Layers</h2>
+          <div id="layer-list" class="layer-list">
+            <p class="status">Loading layers&hellip;</p>
+          </div>
+        </section>
+        <footer id="status-bar">Connecting&hellip;</footer>
+      </aside>
+      <main id="map"></main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
