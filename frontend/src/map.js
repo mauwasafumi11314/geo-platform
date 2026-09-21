@@ -46,6 +46,24 @@ function sourceId(layer) {
   return `gp-src-${layer.name}`;
 }
 
+/**
+ * Resolve a TileJSON tile template against the current origin.
+ *
+ * The API returns tile URLs relative (`/api/layers/x/tiles/{z}/{x}/{y}.pbf`)
+ * so they survive any proxy in front of it. MapLibre, though, requires
+ * absolute URLs in a source's `tiles` array - handed a relative one it fetches
+ * nothing at all, silently.
+ *
+ * This is deliberately string concatenation rather than `new URL()`: the URL
+ * parser percent-encodes `{` and `}`, which would turn the `{z}/{x}/{y}`
+ * placeholders into `%7Bz%7D/...` and break tile addressing.
+ */
+function absoluteTileURL(template) {
+  if (/^[a-z]+:\/\//i.test(template)) return template;
+  const path = template.startsWith('/') ? template : `/${template}`;
+  return `${window.location.origin}${path}`;
+}
+
 export function renderLayerId(layer) {
   return `gp-layer-${layer.name}`;
 }
@@ -95,7 +113,7 @@ export function addLayer(map, layer, tilejson, index) {
   if (!map.getSource(id)) {
     map.addSource(id, {
       type: 'vector',
-      tiles: tilejson.tiles,
+      tiles: tilejson.tiles.map(absoluteTileURL),
       minzoom: tilejson.minzoom,
       maxzoom: tilejson.maxzoom,
       bounds: tilejson.bounds,

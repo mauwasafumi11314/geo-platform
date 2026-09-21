@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query
 
 from geoplatform.api.deps import fetch_layer, parse_bbox
 from geoplatform.api.queries import COUNT_FEATURES, LIST_LAYERS, SELECT_FEATURES
@@ -67,10 +67,16 @@ async def get_features(
     response_model=TileJSON,
     summary="TileJSON document for the layer's vector tiles",
 )
-async def get_tilejson(name: str, request: Request) -> TileJSON:
+async def get_tilejson(name: str) -> TileJSON:
     layer = await fetch_layer(name)
-    base_url = str(request.base_url).rstrip("/")
-    tile_url = f"{base_url}/api/layers/{layer['name']}/tiles/{{z}}/{{x}}/{{y}}.pbf"
+    # Deliberately relative, not built from request.base_url.
+    #
+    # Behind a proxy the API sees its own address rather than the one the
+    # browser used, so an absolute URL here points MapLibre straight at the
+    # backend: it bypasses the proxy, trips CORS, and leaks the internal host.
+    # A root-relative URL resolves against whatever origin served the page,
+    # which is correct in dev, behind a reverse proxy, and in production alike.
+    tile_url = f"/api/layers/{layer['name']}/tiles/{{z}}/{{x}}/{{y}}.pbf"
 
     bounds = (
         layer["bbox_min_x"],

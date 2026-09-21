@@ -48,6 +48,31 @@ function layerCard(map, layer, index, onToggle) {
   return { card, checkbox };
 }
 
+/**
+ * Resolve once the map can accept addSource/addLayer.
+ *
+ * Not a bare `map.once('load')`: that never resolves if the style has already
+ * loaded, and it can stall while an unreachable basemap is retried. Adding a
+ * source only needs the style parsed, which `styledata` reports - tiles can
+ * still be in flight.
+ */
+function whenStyleReady(map) {
+  if (map.isStyleLoaded()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const finish = () => {
+      map.off('load', finish);
+      map.off('styledata', check);
+      resolve();
+    };
+    const check = () => {
+      if (map.isStyleLoaded()) finish();
+    };
+    map.on('load', finish);
+    map.on('styledata', check);
+    check();
+  });
+}
+
 async function start() {
   const map = createMap('map');
 
@@ -71,29 +96,31 @@ async function start() {
     return;
   }
 
-  await map.once('load');
+  // Build the sidebar first: it must not depend on the map style, or a slow
+  // basemap leaves the user staring at an empty panel.
   listEl.innerHTML = '';
-
-  const pending = [];
-  layers.forEach((layer, index) => {
+  const cards = layers.map((layer, index) => {
     const { card, checkbox } = layerCard(map, layer, index, (target, visible) => {
       setLayerVisible(map, renderLayerId(target), visible);
     });
     listEl.append(card);
-
-    pending.push(
-      getTileJSON(layer.name)
-        .then((tilejson) => {
-          const renderId = addLayer(map, layer, tilejson, index);
-          setLayerVisible(map, renderId, checkbox.checked);
-        })
-        .catch((error) => {
-          checkbox.disabled = true;
-          // eslint-disable-next-line no-console
-          console.error(`Layer ${layer.name} failed to load`, error);
-        }),
-    );
+    return { layer, index, checkbox };
   });
+
+  await whenStyleReady(map);
+
+  const pending = cards.map(({ layer, index, checkbox }) =>
+    getTileJSON(layer.name)
+      .then((tilejson) => {
+        const renderId = addLayer(map, layer, tilejson, index);
+        setLayerVisible(map, renderId, checkbox.checked);
+      })
+      .catch((error) => {
+        checkbox.disabled = true;
+        // eslint-disable-next-line no-console
+        console.error(`Layer ${layer.name} failed to load`, error);
+      }),
+  );
 
   await Promise.all(pending);
 

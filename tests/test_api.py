@@ -104,7 +104,8 @@ async def test_tilejson_describes_the_tile_endpoint(client: AsyncClient) -> None
     document = response.json()
 
     assert document["tilejson"] == "3.0.0"
-    assert document["tiles"] == ["http://testserver/api/layers/sample_cities/tiles/{z}/{x}/{y}.pbf"]
+    # Relative on purpose, so the URL survives any proxy in front of the API.
+    assert document["tiles"] == ["/api/layers/sample_cities/tiles/{z}/{x}/{y}.pbf"]
     assert document["vector_layers"][0]["id"] == "sample_cities"
 
 
